@@ -7,6 +7,10 @@ on:
         description: "2ページだけ取得し、公開データを更新しない"
         type: boolean
         default: false
+      deploy_only:
+        description: "取得せず、mainに保存済みのデータをPagesへ再デプロイする"
+        type: boolean
+        default: false
   schedule:
     - cron: "15 18 * * 0" # Monday 03:15 JST
 
@@ -37,6 +41,7 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Fetch and validate ranking
+        if: inputs.deploy_only != true
         id: fetch
         continue-on-error: true
         shell: bash
@@ -50,7 +55,7 @@ jobs:
           fi
 
       - name: Save update status
-        if: always() && inputs.connectivity_test != true
+        if: always() && inputs.connectivity_test != true && inputs.deploy_only != true
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -62,7 +67,7 @@ jobs:
           fi
 
       - name: Upload diagnostic log
-        if: always()
+        if: always() && inputs.deploy_only != true
         uses: actions/upload-artifact@v6
         with:
           name: ranking-update-log-${{ github.run_id }}
@@ -134,6 +139,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: main
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
