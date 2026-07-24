@@ -1,0 +1,143 @@
+name: Update ranking data
+
+on:
+  workflow_dispatch:
+    inputs:
+      connectivity_test:
+        description: "2ページだけ取得し、公開データを更新しない"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "15 18 * * 0" # Monday 03:15 JST
+
+permissions:
+  contents: write
+  issues: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ranking-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      LOG_FILE: logs/update-ranking.log
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Fetch and validate ranking
+        id: fetch
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          if [[ "${{ inputs.connectivity_test }}" == "true" ]]; then
+            python scripts/update_data.py --max-pages 2 --dry-run 2>&1 | tee "$LOG_FILE"
+          else
+            python scripts/update_data.py 2>&1 | tee "$LOG_FILE"
+          fi
+
+      - name: Save update status
+        if: always() && inputs.connectivity_test != true
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update ranking snapshot"
+            git push
+          fi
+
+      - name: Upload diagnostic log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ranking-update-log-${{ github.run_id }}
+          path: logs/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Open failure issue
+        if: steps.fetch.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: "ranking-update",
+              });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: "ranking-update",
+                color: "b60205",
+                description: "ランキング自動更新の障害",
+              });
+            }
+            const title = "ランキング更新に失敗しました";
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "ranking-update",
+            });
+            const body = [
+              `実行: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              "",
+              "接続方法の変更、TCP接続不可、またはデータ品質検証エラーの可能性があります。",
+              "詳細ログは実行画面の artifact を確認してください。",
+            ].join("\n");
+            if (existing.data.length) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.data[0].number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ["ranking-update"],
+              });
+            }
+
+      - name: Mark workflow failed
+        if: steps.fetch.outcome == 'failure'
+        run: exit 1
+
+  deploy:
+    needs: update
+    if: always() && inputs.connectivity_test != true
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
