@@ -1,9 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastAttemptAt": null,
-  "lastAttemptSucceeded": false,
-  "lastSuccessfulUpdateAt": null,
-  "nextScheduledUpdateAt": null,
-  "errorSummary": "初回データ取得前です"
+  "lastAttemptAt": "2026-07-24T15:33:01Z",
+  "lastAttemptSucceeded": true,
+  "lastSuccessfulUpdateAt": "2026-07-24T15:33:01Z",
+  "nextScheduledUpdateAt": "2026-07-26T18:15:00Z"
 }
-
