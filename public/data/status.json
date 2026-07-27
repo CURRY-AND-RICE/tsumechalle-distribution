@@ -1,8 +1,7 @@
 {
   "schemaVersion": 1,
-  "lastAttemptAt": "2026-07-26T19:50:33Z",
-  "lastAttemptSucceeded": false,
-  "lastSuccessfulUpdateAt": "2026-07-24T15:33:01Z",
-  "nextScheduledUpdateAt": "2026-08-02T18:15:00Z",
-  "errorSummary": "レーティングが想定範囲外です: -8"
+  "lastAttemptAt": "2026-07-27T08:08:09Z",
+  "lastAttemptSucceeded": true,
+  "lastSuccessfulUpdateAt": "2026-07-27T08:08:09Z",
+  "nextScheduledUpdateAt": "2026-08-02T18:15:00Z"
 }
