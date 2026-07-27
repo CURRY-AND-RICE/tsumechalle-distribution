@@ -38,10 +38,12 @@ class AggregateRatingsTest(unittest.TestCase):
 
     def test_rating_range(self):
         self.assertEqual(update_data.parse_rating("1234"), 1234)
+        self.assertEqual(update_data.parse_rating("-8"), -8)
         with self.assertRaises(ValueError):
-            update_data.parse_rating("-1")
+            update_data.parse_rating("-10001")
+        with self.assertRaises(ValueError):
+            update_data.parse_rating("10001")
 
 
 if __name__ == "__main__":
     unittest.main()
-

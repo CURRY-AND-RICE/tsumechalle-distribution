@@ -67,7 +67,7 @@ document.querySelector("#rating-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (!state.data) return;
   const rating = Number.parseInt(document.querySelector("#rating-input").value, 10);
-  if (!Number.isInteger(rating) || rating < 0 || rating > 10000) return;
+  if (!Number.isInteger(rating) || rating < -10000 || rating > 10000) return;
   const position = findPosition(rating);
   const percentile = Math.min(100, position.rank / state.data.totalUsers * 100);
   document.querySelector("#result").innerHTML =
@@ -102,4 +102,3 @@ async function initialize() {
 }
 
 initialize();
-

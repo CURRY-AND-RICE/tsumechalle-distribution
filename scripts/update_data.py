@@ -59,7 +59,7 @@ def parse_rating(value: str) -> int:
         rating = int(value)
     except ValueError as exc:
         raise ValueError(f"レーティングが整数ではありません: {value!r}") from exc
-    if not 0 <= rating <= 10000:
+    if not -10000 <= rating <= 10000:
         raise ValueError(f"レーティングが想定範囲外です: {rating}")
     return rating
 
